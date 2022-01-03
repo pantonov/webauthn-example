@@ -3,137 +3,143 @@
 
 <head>
   <meta charset="utf-8">
-  <title>WebAuthn Demo</title>
+  <title>WebAuthn Login & Signature Demo</title>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
 </head>
 
 <body>
 
-  Username:
-  <br>
-  <input type="text" name="username" id="email" placeholder="i.e. foo@bar.com">
+  Username: <input type="text" name="username" id="email" placeholder="i.e. foo@bar.com">
   <br>
   <br>
   <button onclick="registerUser()">Register</button>
   <button onclick="loginUser()">Login</button>
 
+  <br>
+  <p id="credential"></p>
+  <br><hr><br>
+  Data to sign: <input type="text" id="data" placeholder="signdata">
+  <br><br>
   <button onclick="sign()">Sign</button>
-  <br>
-  <br>
-  <p id="sig">[no signature]</p>
+  <br><br>
+  Signature: <br><p id="sig"></p>
+  <hr><br>
+  <button onclick="verify()">Verify</button>
+  <br><br>
+  <p id="result"></p>
 
   <script>
 
-    $(document).ready(function () {
+  $(document).ready(function () {
 
       // check whether current browser supports WebAuthn
       if (!window.PublicKeyCredential) {
-        alert("Error: this browser does not support WebAuthn");
-        return;
+          alert("Error: this browser does not support WebAuthn");
+          return;
       }
-    });
+  });
 
-    // Base64 to ArrayBuffer
-    function bufferDecode(value) {
+  // Base64 to ArrayBuffer
+  function bufferDecode(value) {
       return Uint8Array.from(atob(value), c => c.charCodeAt(0));
-    }
+  }
 
-    // ArrayBuffer to URLBase64
-    function bufferEncode(value) {
-      return btoa(String.fromCharCode.apply(null, new Uint8Array(value)))
-        .replace(/\+/g, "-")
-        .replace(/\//g, "_")
-        .replace(/=/g, "");;
-    }
+  // ArrayBuffer to URLBase64
+  function bufferEncode(value) {
+      return toBase64(String.fromCharCode.apply(null, new Uint8Array(value)));
+  }
 
-    function registerUser() {
+  function toBase64(value) {
+      return btoa(value).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");;
+  }
 
-        var username = $("#email").val()
+  function registerUser() {
+      let username = $("#email").val()
       if (username === "") {
-        alert("Please enter a username");
-        return;
+          alert("Please enter a username");
+          return;
       }
 
       $.get(
-        '/register/begin/' + username,
-        null,
-        function (data) {
-          return data
-        },
-        'json')
-        .then((credentialCreationOptions) => {
+          '/register/begin/' + username,
+          null,
+          function (data) {
+              return data
+          },
+          'json')
+      .then((credentialCreationOptions) => {
           console.log(credentialCreationOptions)
           credentialCreationOptions.publicKey.challenge = bufferDecode(credentialCreationOptions.publicKey.challenge);
           credentialCreationOptions.publicKey.user.id = bufferDecode(credentialCreationOptions.publicKey.user.id);
           if (credentialCreationOptions.publicKey.excludeCredentials) {
-            for (var i = 0; i < credentialCreationOptions.publicKey.excludeCredentials.length; i++) {
-              credentialCreationOptions.publicKey.excludeCredentials[i].id = bufferDecode(credentialCreationOptions.publicKey.excludeCredentials[i].id);
-            }
+              for (var i = 0; i < credentialCreationOptions.publicKey.excludeCredentials.length; i++) {
+                  credentialCreationOptions.publicKey.excludeCredentials[i].id = bufferDecode(credentialCreationOptions.publicKey.excludeCredentials[i].id);
+              }
           }
 
           return navigator.credentials.create({
-            publicKey: credentialCreationOptions.publicKey
+              publicKey: credentialCreationOptions.publicKey
           })
-        })
-        .then((credential) => {
+      })
+      .then((credential) => {
           console.log(credential)
           let attestationObject = credential.response.attestationObject;
           let clientDataJSON = credential.response.clientDataJSON;
           let rawId = credential.rawId;
 
           $.post(
-            '/register/finish/' + username,
-            JSON.stringify({
-              id: credential.id,
-              rawId: bufferEncode(rawId),
-              type: credential.type,
-              response: {
-                attestationObject: bufferEncode(attestationObject),
-                clientDataJSON: bufferEncode(clientDataJSON),
+              '/register/finish/' + username,
+              JSON.stringify({
+                  id: credential.id,
+                  rawId: bufferEncode(rawId),
+                  type: credential.type,
+                  response: {
+                      attestationObject: bufferEncode(attestationObject),
+                      clientDataJSON: bufferEncode(clientDataJSON),
+                  },
+              }),
+              function (data) {
+                  return data
               },
-            }),
-            function (data) {
-              return data
-            },
-            'json')
-        })
-        .then((success) => {
-          alert("successfully registered " + username + "!")
-          return
-        })
-        .catch((error) => {
+              'json')
+          .promise()
+          .then(data => {
+              $("#credential").text("Credential: " + JSON.stringify(data));
+          })
+      })
+      .catch((error) => {
           console.log(error)
           alert("failed to register " + username)
-        })
-    }
+      })
+  }
 
-    function loginUser() {
-
-      username = $("#email").val()
+  function loginUser() {
+      let username = $("#email").val()
       if (username === "") {
-        alert("Please enter a username");
-        return;
+          alert("Please enter a username");
+          return;
       }
 
       $.get(
-        '/login/begin/' + username,
-        null,
-        function (data) {
-          return data
-        },
-        'json')
-        .then((credentialRequestOptions) => {
+          '/login/begin/' + username,
+          null,
+          function (data) {
+              return data
+          },
+          'json')
+      .promise()
+      .then((credentialRequestOptions) => {
           console.log(credentialRequestOptions)
           credentialRequestOptions.publicKey.challenge = bufferDecode(credentialRequestOptions.publicKey.challenge);
           credentialRequestOptions.publicKey.allowCredentials.forEach(function (listItem) {
-            listItem.id = bufferDecode(listItem.id)
+              listItem.id = bufferDecode(listItem.id)
           });
 
           return navigator.credentials.get({
-            publicKey: credentialRequestOptions.publicKey
+              publicKey: credentialRequestOptions.publicKey
           })
-        })
-        .then((assertion) => {
+      })
+      .then((assertion) => {
           console.log(assertion)
           let authData = assertion.response.authenticatorData;
           let clientDataJSON = assertion.response.clientDataJSON;
@@ -142,96 +148,120 @@
           let userHandle = assertion.response.userHandle;
 
           $.post(
-            '/login/finish/' + username,
-            JSON.stringify({
-              id: assertion.id,
-              rawId: bufferEncode(rawId),
-              type: assertion.type,
-              response: {
-                authenticatorData: bufferEncode(authData),
-                clientDataJSON: bufferEncode(clientDataJSON),
-                signature: bufferEncode(sig),
-                userHandle: bufferEncode(userHandle),
+              '/login/finish/' + username,
+              JSON.stringify({
+                  id: assertion.id,
+                  rawId: bufferEncode(rawId),
+                  type: assertion.type,
+                  response: {
+                      authenticatorData: bufferEncode(authData),
+                      clientDataJSON: bufferEncode(clientDataJSON),
+                      signature: bufferEncode(sig),
+                      userHandle: bufferEncode(userHandle),
+                  },
+              }),
+              function (data) {
+                  return data
               },
-            }),
-            function (data) {
-              return data
-            },
-            'json')
-        })
-        .then((success) => {
+              'json')
+          .promise()
+      })
+      .then((success) => {
           alert("successfully logged in " + username + "!")
-          return
-        })
-        .catch((error) => {
+      })
+      .catch((error) => {
           console.log(error)
-          alert("failed to register " + username)
-        })
-    }
+          alert("login failed: " + username)
+      })
+  }
 
-    function sign() {
-        username = $("#email").val();
-        sigdata = "hello";
-        if (username === "") {
-            alert("Please enter a username");
-            return;
-        }
-        $.get(
-            '/beginsign/' + username + "/" + sigdata,
-            null,
-            function (data) {
-                return data
-            },
-            'json')
-        .then((credentialRequestOptions) => {
-            console.log(credentialRequestOptions)
-            credentialRequestOptions.publicKey.challenge = bufferDecode(credentialRequestOptions.publicKey.challenge);
-            credentialRequestOptions.publicKey.allowCredentials.forEach(function (listItem) {
-                listItem.id = bufferDecode(listItem.id)
-            });
+  //////////////////////////////////////////////////
 
-            return navigator.credentials.get({
-                publicKey: credentialRequestOptions.publicKey
-            })
-        })
-        .then((assertion) => {
-            console.log(assertion)
-            let authData = assertion.response.authenticatorData;
-            let clientDataJSON = assertion.response.clientDataJSON;
-            let rawId = assertion.rawId;
-            let sig = assertion.response.signature;
-            let userHandle = assertion.response.userHandle;
 
-            $.post(
-                '/sign/' + username + "/" + sigdata,
-                JSON.stringify({
-                    id: assertion.id,
-                    rawId: bufferEncode(rawId),
-                    type: assertion.type,
-                    response: {
-                        authenticatorData: bufferEncode(authData),
-                        clientDataJSON: bufferEncode(clientDataJSON),
-                        signature: bufferEncode(sig),
-                        userHandle: bufferEncode(userHandle),
-                    },
-                }),
-                function (data) {
-                    return data
-                },
-                'json')
-            .then((data) => data)
-        })
-        .then((success) => {
-            $("#sig").text(success);
-            console.log(success);
-            alert("success signing " + username + "!")
-            return
-        })
-        .catch((error) => {
-            console.log(error)
-            alert("failed to register " + username)
-        })
-    }
+  function sign() {
+      let username = $("#email").val();
+      let sigdata = toBase64($("#data").val());
+      if (username === "") {
+          alert("Please enter a username");
+          return;
+      }
+      $.get(
+          '/beginsign/' + username + "/" + sigdata,
+          null,
+          function (data) {
+              return data
+          },
+          'json')
+      .promise()
+      .then((credentialRequestOptions) => {
+          console.log(credentialRequestOptions)
+          credentialRequestOptions.publicKey.challenge = bufferDecode(credentialRequestOptions.publicKey.challenge);
+          credentialRequestOptions.publicKey.allowCredentials.forEach(function (listItem) {
+              listItem.id = bufferDecode(listItem.id)
+          });
+
+          return navigator.credentials.get({
+              publicKey: credentialRequestOptions.publicKey
+          })
+      })
+      .then((assertion) => {
+          console.log(assertion)
+          let authData = assertion.response.authenticatorData;
+          let clientDataJSON = assertion.response.clientDataJSON;
+          let rawId = assertion.rawId;
+          let sig = assertion.response.signature;
+          let userHandle = assertion.response.userHandle;
+
+          $.post(
+              '/sign',
+              JSON.stringify({
+                  id: assertion.id,
+                  rawId: bufferEncode(rawId),
+                  type: assertion.type,
+                  response: {
+                      authenticatorData: bufferEncode(authData),
+                      clientDataJSON: bufferEncode(clientDataJSON),
+                      signature: bufferEncode(sig),
+                      userHandle: bufferEncode(userHandle),
+                  },
+              }),
+              function (data) {
+                  return data
+              },
+              'json')
+          .promise()
+          .then((data) => {
+              $("#sig").text(JSON.stringify(data));
+          })
+      })
+      .catch((error) => {
+          console.log(error)
+          alert("failed to sign with username " + username)
+      })
+  }
+
+  function verify() {
+      let username = $("#email").val();
+      let data = toBase64($("#data").val());
+      let signature = toBase64($("#sig").text());
+
+      $.get(
+          '/verify/' + username + '/' + signature + '/' + data,
+          null,
+          function (data) {
+              return data
+          },
+          'json')
+      .promise()
+      .then((result) => {
+          console.log(result);
+          $("#result").text(result);
+      })
+      .catch((error) => {
+          console.log(error)
+          alert("verify error");
+      })
+  }
   </script>
 </body>
 

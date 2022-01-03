@@ -1,10 +1,14 @@
-# WebAuthn Basic Client/Server Example (go)
+# WebAuthn Login & Digitail Signatures Example (go)
 
-This library implements a simple, basic WebAuthn client and server based on [duo's WebAuthn implementation](https://github.com/duo-labs/webauthn). The code pulls inspiration from [duo's WebAuthn example implementation](https://github.com/duo-labs/webauthn.io). This example is NOT meant to be used in production, but rather as an introduction to WebAuthn as well as a more quick-and-dirty, stripped down version of [webauthn.io](https://webauthn.io/).
+This is a modified and extended WebAuthn example based on [webauthn-example](https://github.com/hbolimovsky/webauthn-example). It adds digital signatures
+functionality from [webauthn-sign](https://github.com/pantonov/webauthn-sign). 
 
-## Blog Post
+Insructions below are copied verbatim from webauthn-example.
 
-You can check it out [here](https://www.herbie.dev/blog/webauthn-basic-web-client-server/)
+---
+
+This library implements a simple, basic WebAuthn client and server based on [duo's WebAuthn implementation](https://github.com/duo-labs/webauthn). The code pulls inspiration from [duo's WebAuthn example implementation](https://github.com/duo-labs/webauthn.io). 
+This example is NOT meant to be used in production, but rather as an introduction to WebAuthn as well as a more quick-and-dirty, stripped down version of [webauthn.io](https://webauthn.io/).
 
 ## Quickstart
 
