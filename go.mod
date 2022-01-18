@@ -2,13 +2,11 @@ module github.com/pantonov/webauthn-example
 
 go 1.17
 
-replace github.com/pantonov/webauthn_sign => ../webauthn_sign
-
 require (
-	github.com/duo-labs/webauthn v0.0.0-20211221191814-a22482edaa3b
+	github.com/duo-labs/webauthn v0.0.0-20220114184233-e97fb22df1cc
 	github.com/duo-labs/webauthn.io v0.0.0-20190926134215-35f44a73518f
 	github.com/gorilla/mux v1.7.1
-	github.com/pantonov/webauthn_sign v0.0.0-00010101000000-000000000000
+	github.com/pantonov/webauthn_sign v0.1.0
 )
 
 require (
@@ -19,11 +17,10 @@ require (
 	github.com/gorilla/context v1.1.1 // indirect
 	github.com/gorilla/securecookie v1.1.1 // indirect
 	github.com/gorilla/sessions v1.1.3 // indirect
-	github.com/konsorten/go-windows-terminal-sequences v1.0.1 // indirect
 	github.com/mitchellh/mapstructure v1.1.2 // indirect
 	github.com/satori/go.uuid v1.2.0 // indirect
-	github.com/sirupsen/logrus v1.4.1 // indirect
+	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4 // indirect
-	golang.org/x/sys v0.0.0-20190726091711-fc99dfbffb4e // indirect
+	golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e // indirect
 )
